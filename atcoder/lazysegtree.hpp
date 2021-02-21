@@ -4,11 +4,13 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
+#include <mutex>
 #include <vector>
 
 #include "atcoder/internal_bit"
 
 namespace atcoder {
+std::mutex mtx_all_apply, mtx_push;
 
 template <class S,
           S (*op)(S, S),
@@ -174,10 +176,12 @@ struct lazy_segtree {
 
     void update(int k) { d[k] = op(d[2 * k], d[2 * k + 1]); }
     void all_apply(int k, F f) const {
+        std::lock_guard<std::mutex> guard(mtx_all_apply);
         d[k] = mapping(f, d[k]);
         if (k < size) lz[k] = composition(f, lz[k]);
     }
     void push(int k) const {
+        std::lock_guard<std::mutex> guard(mtx_push);
         all_apply(2 * k, lz[k]);
         all_apply(2 * k + 1, lz[k]);
         lz[k] = id();
